@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RPA / RPG Maker Extractor</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1e222d; --line:#2a2f3c;
+    --text:#e6e9ef; --dim:#9aa3b2; --accent:#6ea8fe; --accent2:#3d7dfd;
+    --ok:#4ade80; --warn:#fbbf24; --danger:#f87171;
+  }
+  @media (prefers-color-scheme: light){
+    :root{--bg:#f4f6fa;--panel:#fff;--panel2:#eef1f6;--line:#dde2ec;
+      --text:#1a1d26;--dim:#5c6472;--accent:#2563eb;--accent2:#1d4ed8;}
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font:14px/1.5 "Segoe UI",system-ui,sans-serif;background:var(--bg);
+    color:var(--text);display:flex;flex-direction:column;overflow:hidden}
+  header{display:flex;align-items:center;gap:12px;padding:12px 16px;
+    background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:600}
+  header .meta{color:var(--dim);font-size:12px}
+  .grow{flex:1}
+  button{font:inherit;color:var(--text);background:var(--panel2);
+    border:1px solid var(--line);padding:7px 13px;border-radius:8px;
+    cursor:pointer;transition:.15s}
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button.primary{background:var(--accent2);border-color:var(--accent2);color:#fff}
+  button.primary:hover{filter:brightness(1.1);color:#fff}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  main{flex:1;display:flex;min-height:0}
+  aside{width:360px;min-width:260px;max-width:60%;display:flex;flex-direction:column;
+    background:var(--panel);border-right:1px solid var(--line)}
+  .tools{display:flex;gap:8px;padding:10px;border-bottom:1px solid var(--line);
+    flex-wrap:wrap;align-items:center}
+  .tools input[type=search]{flex:1;min-width:120px;background:var(--panel2);
+    border:1px solid var(--line);border-radius:8px;color:var(--text);
+    padding:7px 10px;font:inherit}
+  .filters{display:flex;gap:4px;padding:6px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .chip{font-size:12px;padding:3px 9px;border-radius:99px;border:1px solid var(--line);
+    background:transparent;color:var(--dim);cursor:pointer}
+  .chip.on{background:var(--accent2);border-color:var(--accent2);color:#fff}
+  .list{flex:1;overflow:auto}
+  .row{display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;
+    border-bottom:1px solid transparent;white-space:nowrap}
+  .row:hover{background:var(--panel2)}
+  .row.sel{background:color-mix(in srgb,var(--accent) 22%,transparent)}
+  .row .ic{width:18px;text-align:center;flex:none}
+  .row .nm{overflow:hidden;text-overflow:ellipsis;flex:1}
+  .row .sz{color:var(--dim);font-size:11px;flex:none;font-variant-numeric:tabular-nums}
+  .row input[type=checkbox]{flex:none}
+  .barbottom{padding:10px;border-top:1px solid var(--line);display:flex;gap:8px;
+    align-items:center;flex-wrap:wrap}
+  .barbottom .info{color:var(--dim);font-size:12px;flex:1;min-width:80px}
+  section.preview{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
+  .pv-head{padding:10px 16px;border-bottom:1px solid var(--line);display:flex;gap:10px;
+    align-items:center;background:var(--panel)}
+  .pv-head .title{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pv-head .sub{color:var(--dim);font-size:12px}
+  .pv-body{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;
+    padding:20px;position:relative}
+  .pv-body img,.pv-body video{max-width:100%;max-height:100%;border-radius:8px;
+    box-shadow:0 8px 30px rgba(0,0,0,.35);background:#0006}
+  .pv-body pre{align-self:stretch;width:100%;height:100%;margin:0;overflow:auto;
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;
+    font:12.5px/1.6 "Cascadia Code",Consolas,monospace;white-space:pre-wrap;
+    word-break:break-word;color:var(--text)}
+  .hint{color:var(--dim);text-align:center;max-width:460px}
+  .hint b{color:var(--text)}
+  #drop{position:fixed;inset:0;background:color-mix(in srgb,var(--accent2) 30%,#000c);
+    display:none;align-items:center;justify-content:center;z-index:50;backdrop-filter:blur(2px)}
+  #drop.on{display:flex}
+  #drop .box{border:3px dashed #fff;border-radius:18px;padding:60px 90px;color:#fff;
+    font-size:22px;font-weight:600;text-align:center}
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);
+    border:1px solid var(--line);border-radius:10px;padding:12px 18px;box-shadow:0 10px 40px #000a;
+    display:none;max-width:80vw;z-index:60}
+  #toast.on{display:block}
+  #toast.ok{border-color:var(--ok)} #toast.err{border-color:var(--danger)}
+  .spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--accent);
+    border-radius:50%;animation:s 1s linear infinite}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>📦 RPA / RPG Maker Extractor</h1>
+  <span class="meta" id="arcMeta">Chua mo file nao</span>
+  <span class="grow"></span>
+  <button id="btnClear" disabled>🗑 Xoa</button>
+  <button id="btnDir" title="Mo ca thu muc game RPG Maker">🗝 Mo thu muc game</button>
+  <button id="btnOpen" class="primary">📂 Mo file (.rpa / .rpgmvp)</button>
+  <input id="fileInput" type="file" multiple class="hidden"
+         accept=".rpa,.rpi,.rpc,.rpgmvp,.rpgmvo,.rpgmvm,.png_,.ogg_,.m4a_">
+  <input id="dirInput" type="file" webkitdirectory class="hidden">
+</header>
+
+<main>
+  <aside>
+    <div class="tools">
+      <input type="search" id="search" placeholder="Tim file...">
+      <button id="btnAll" title="Chon/bo tat ca">☑ Tat ca</button>
+    </div>
+    <div class="filters" id="filters">
+      <span class="chip on" data-k="all">Tat ca</span>
+      <span class="chip" data-k="image">🖼 Anh</span>
+      <span class="chip" data-k="video">🎞 Video</span>
+      <span class="chip" data-k="audio">🎵 Audio</span>
+      <span class="chip" data-k="text">📄 Text</span>
+      <span class="chip" data-k="binary">⬛ Khac</span>
+    </div>
+    <div class="list" id="list"></div>
+    <div class="barbottom">
+      <span class="info" id="selInfo">—</span>
+      <button id="btnZipSel">⬇ Tai .zip (chon)</button>
+      <button id="btnZipAll" class="primary">⬇ Tat ca (.zip)</button>
+    </div>
+  </aside>
+
+  <section class="preview">
+    <div class="pv-head">
+      <span class="title" id="pvTitle">Preview</span>
+      <span class="grow"></span>
+      <span class="sub" id="pvSub"></span>
+      <button id="btnDl" disabled>💾 Tai file nay</button>
+    </div>
+    <div class="pv-body" id="pvBody">
+      <div class="hint">
+        <p style="font-size:40px;margin:0">📦</p>
+        <p>Keo-tha file <b>.rpa</b> / <b>.rpgmvp</b> (hoac ca thu muc game) vao day,
+           hoac bam nut ben tren.</p>
+        <p style="font-size:12px">Ren'Py RPA-1.0/2.0/3.0/3.2 · RPG Maker MV/MZ.
+           Moi thu xu ly ngay trong trinh duyet — file khong gui di dau.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="drop"><div class="box">📥 Tha file / thu muc vao day</div></div>
+<div id="toast"></div>
+
+<script type="module">
+import * as R from "./rpacore.js";
+
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let FILES=[], FILTER="all", SEARCH="", CURRENT=null, SEL=new Set(), MEDIA=null;
+let SRC_LABEL="extracted", CUR_URL=null;
+
+function toast(msg,kind="",ms=3200){const t=$("#toast");t.textContent=msg;t.className="on "+kind;
+  clearTimeout(t._t);t._t=setTimeout(()=>t.className="",ms);}
+function fmtSize(n){const u=["B","KB","MB","GB"];let i=0,x=n;while(x>=1024&&i<3){x/=1024;i++}
+  return (i===0?x:x.toFixed(1))+u[i];}
+function icon(k){return {image:"🖼",video:"🎞",audio:"🎵",text:"📄",binary:"⬛"}[k]||"⬛"}
+function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function cssEsc(s){return s.replace(/["\\]/g,"\\$&")}
+function baseName(n){return n.split(/[\\/]/).pop()}
+
+// ---------------------------------------------------------------- danh sach
+function shownFiles(){const s=SEARCH.toLowerCase();
+  return FILES.filter(f=>(FILTER==="all"||f.kind===FILTER)&&(!s||f.name.toLowerCase().includes(s)));}
+function render(){
+  const list=$("#list");list.innerHTML="";
+  for(const f of shownFiles()){
+    const row=document.createElement("div");
+    row.className="row"+(CURRENT===f.name?" sel":"");row.dataset.name=f.name;
+    row.innerHTML=`<input type="checkbox" ${SEL.has(f.name)?"checked":""}>
+      <span class="ic">${icon(f.kind)}</span>
+      <span class="nm" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+      <span class="sz">${fmtSize(f.size)}</span>`;
+    row.querySelector("input").addEventListener("click",e=>{e.stopPropagation();
+      e.target.checked?SEL.add(f.name):SEL.delete(f.name);updateSel();});
+    row.addEventListener("click",()=>preview(f));
+    list.appendChild(row);
+  }
+  updateSel();
+}
+function updateSel(){
+  const tot=FILES.reduce((a,f)=>a+f.size,0);
+  const selBytes=FILES.filter(f=>SEL.has(f.name)).reduce((a,f)=>a+f.size,0);
+  $("#selInfo").textContent=SEL.size?`Chon ${SEL.size} file · ${fmtSize(selBytes)}`
+    :`${FILES.length} file · ${fmtSize(tot)}`;
+  $("#btnZipSel").disabled=SEL.size===0;
+}
+function move(d){const sh=shownFiles();if(!sh.length)return;
+  let i=sh.findIndex(f=>f.name===CURRENT);i=i<0?(d>0?0:sh.length-1):i+d;
+  i=Math.max(0,Math.min(sh.length-1,i));const f=sh[i];preview(f);
+  const r=$('#list .row[data-name="'+cssEsc(f.name)+'"]');if(r)r.scrollIntoView({block:"nearest"});}
+function moveTo(i){const sh=shownFiles();if(!sh.length)return;const f=i<0?sh[sh.length-1]:sh[i];
+  preview(f);const r=$('#list .row[data-name="'+cssEsc(f.name)+'"]');if(r)r.scrollIntoView({block:"nearest"});}
+
+// ---------------------------------------------------------------- preview
+async function preview(f){
+  CURRENT=f.name;MEDIA=null;render();
+  $("#pvTitle").textContent=f.name;$("#pvSub").textContent=`${f.kind} · ${fmtSize(f.size)}`;
+  $("#btnDl").disabled=false;
+  const body=$("#pvBody");body.innerHTML='<div class="spin"></div>';
+  if(CUR_URL){URL.revokeObjectURL(CUR_URL);CUR_URL=null;}
+  let bytes;
+  try{ bytes=await f.read(); }
+  catch(e){ body.innerHTML=`<div class="hint">Loi doc file: ${escapeHtml(e.message)}</div>`; return; }
+  if(CURRENT!==f.name)return; // da chuyen file khac
+  body.innerHTML="";
+  if(f.kind==="text"){
+    const t=new TextDecoder("utf-8").decode(bytes);
+    const pre=document.createElement("pre");
+    pre.textContent=t.length>500000?t.slice(0,500000)+"\n\n… (cat bot)":t;
+    body.appendChild(pre);return;
+  }
+  const blob=new Blob([bytes],{type:R.mimeOf(f.name)});
+  CUR_URL=URL.createObjectURL(blob);
+  if(f.kind==="image"){const img=new Image();img.src=CUR_URL;body.appendChild(img);}
+  else if(f.kind==="video"){const v=document.createElement("video");v.src=CUR_URL;v.controls=true;body.appendChild(v);MEDIA=v;}
+  else if(f.kind==="audio"){const a=document.createElement("audio");a.src=CUR_URL;a.controls=true;a.style.width="80%";body.appendChild(a);MEDIA=a;}
+  else{body.innerHTML=`<div class="hint"><p style="font-size:40px">⬛</p>
+    <p>Khong preview duoc loai file nay.</p>
+    <button class="primary" id="dlThis">💾 Tai xuong</button></div>`;
+    $("#dlThis").onclick=()=>dlCurrent();}
+}
+async function dlCurrent(){
+  const f=FILES.find(x=>x.name===CURRENT);if(!f)return;
+  const bytes=await f.read();
+  downloadBlob(new Blob([bytes],{type:R.mimeOf(f.name)}), baseName(f.name));
+}
+$("#btnDl").addEventListener("click",dlCurrent);
+function downloadBlob(blob,filename){const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();
+  a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),15000);}
+
+// ---------------------------------------------------------------- load / reset
+function setCollection(entries,{version,keyLabel,label}){
+  FILES=entries;SEL.clear();CURRENT=null;MEDIA=null;SRC_LABEL=label||"extracted";
+  $("#arcMeta").textContent=`${label} · ${version} · key ${keyLabel} · ${entries.length} file`;
+  document.title=`Extractor · ${label}`;
+  $("#btnClear").disabled=false;
+  render();
+  $("#pvBody").innerHTML=`<div class="hint"><p style="font-size:40px">👈</p>
+    <p>Da mo <b>${entries.length}</b> file. Bam 1 file de xem truoc.</p></div>`;
+  toast(`Da mo ${entries.length} file`,"ok");
+}
+function resetUI(){
+  FILES=[];SEL.clear();CURRENT=null;MEDIA=null;SEARCH="";FILTER="all";
+  if(CUR_URL){URL.revokeObjectURL(CUR_URL);CUR_URL=null;}
+  $("#search").value="";$$(".chip").forEach(c=>c.classList.toggle("on",c.dataset.k==="all"));
+  $("#list").innerHTML="";$("#arcMeta").textContent="Chua mo file nao";
+  $("#pvTitle").textContent="Preview";$("#pvSub").textContent="";
+  $("#btnDl").disabled=true;$("#btnClear").disabled=true;$("#btnZipSel").disabled=true;
+  $("#selInfo").textContent="—";document.title="RPA / RPG Maker Extractor";
+  $("#pvBody").innerHTML=`<div class="hint"><p style="font-size:40px;margin:0">📦</p>
+    <p>Keo-tha file <b>.rpa</b> / <b>.rpgmvp</b> (hoac ca thu muc game) vao day, hoac bam nut ben tren.</p>
+    <p style="font-size:12px">Ren'Py RPA + RPG Maker MV/MZ. Moi thu xu ly ngay trong trinh duyet.</p></div>`;
+}
+
+// ---------------------------------------------------------------- mo RPG Maker
+async function findRpgmvKey(items){
+  // items: [{file, path}]
+  for(const it of items){
+    if(/\.(rpgmvp|png_)$/i.test(it.file.name)){
+      const head=new Uint8Array(await it.file.slice(0,R.RPGMV_HEADER_LEN+16).arrayBuffer());
+      const k=R.keyFromPng(head); if(k)return k;
+    }
+  }
+  for(const it of items){
+    if(/system\.json$/i.test(it.file.name)){
+      const k=R.keyFromSystemJson(await it.file.text()); if(k)return k;
+    }
+  }
+  const hex=window.prompt("Khong tim thay key tu dong (khong co .rpgmvp / System.json).\n"
+    +"Nhap encryption key (32 ky tu hex) neu ban co:");
+  if(hex)try{return R.parseKeyHex(hex);}catch(e){toast(e.message,"err");}
+  return null;
+}
+async function openRpgmv(items,label){
+  const enc=items.filter(it=>R.isEncrypted(it.file.name));
+  if(!enc.length){toast("Khong co file .rpgmvp/.rpgmvo/.rpgmvm","err");return;}
+  toast("Dang tim key...");
+  const key=await findRpgmvKey(enc);
+  if(!key){toast("Chua co key, khong the giai ma","err");return;}
+  const entries=enc.map(it=>{
+    const name=R.realName(it.path).replace(/\\/g,"/");
+    return {name,kind:R.kindOf(name),size:Math.max(it.file.size-R.RPGMV_HEADER_LEN,0),
+      read:async()=>R.decryptBytes(new Uint8Array(await it.file.arrayBuffer()),key)};
+  });
+  entries.sort((a,b)=>a.name.toLowerCase()<b.name.toLowerCase()?-1:1);
+  setCollection(entries,{version:"RPG Maker MV/MZ",keyLabel:R.keyToHex(key),label});
+}
+
+// ---------------------------------------------------------------- mo RPA
+async function openRpa(file,companions){
+  toast(`Dang doc ${file.name}...`);
+  const sliceFn=(a,b)=>file.slice(a,b).arrayBuffer().then(x=>new Uint8Array(x));
+  let idx;
+  try{ idx=await R.readRpaIndex(file.size,sliceFn); }
+  catch(e){ toast("Loi doc RPA: "+e.message,"err"); return; }
+  // RPA-1.0 can .rpi di kem (index nam trong file .rpi) — bao neu thieu
+  const entries=idx.entries.map(e=>({
+    name:e.name,kind:R.kindOf(e.name),size:e.length,
+    read:async()=>R.readRpaEntry(e,sliceFn)}));
+  setCollection(entries,{version:idx.version,keyLabel:idx.keyLabel,label:file.name});
+}
+
+// ---------------------------------------------------------------- dinh tuyen
+async function handleItems(items){
+  if(!items.length)return;
+  const enc=items.filter(it=>R.isEncrypted(it.file.name));
+  if(enc.length){
+    const label=items.length>1?"(nhieu file)":baseName(items[0].path);
+    await openRpgmv(items,label.startsWith("(")?"RPG Maker":label);return;
+  }
+  const rpa=items.find(it=>/\.(rpa|rpc)$/i.test(it.file.name));
+  if(rpa){await openRpa(rpa.file,items);return;}
+  toast("Khong tim thay file .rpa hay .rpgmvp trong lua chon","err");
+}
+function filesToItems(fileList){
+  return [...fileList].map(f=>({file:f,path:f.webkitRelativePath||f.name}));
+}
+
+// ---------------------------------------------------------------- nut bam
+$("#btnOpen").addEventListener("click",()=>$("#fileInput").click());
+$("#btnDir").addEventListener("click",()=>$("#dirInput").click());
+$("#fileInput").addEventListener("change",e=>{handleItems(filesToItems(e.target.files));e.target.value="";});
+$("#dirInput").addEventListener("change",e=>{handleItems(filesToItems(e.target.files));e.target.value="";});
+$("#btnClear").addEventListener("click",()=>{resetUI();toast("Da xoa. Mo file khac de xu ly.","ok");});
+
+// filters / search / select-all
+$("#filters").addEventListener("click",e=>{if(!e.target.classList.contains("chip"))return;
+  $$(".chip").forEach(c=>c.classList.remove("on"));e.target.classList.add("on");
+  FILTER=e.target.dataset.k;render();});
+$("#search").addEventListener("input",e=>{SEARCH=e.target.value;render();});
+$("#btnAll").addEventListener("click",()=>{const sh=shownFiles();
+  const allOn=sh.length&&sh.every(f=>SEL.has(f.name));
+  sh.forEach(f=>allOn?SEL.delete(f.name):SEL.add(f.name));render();});
+
+// keyboard
+window.addEventListener("keydown",e=>{
+  const inSearch=e.target&&e.target.id==="search";
+  if(e.key==="ArrowDown"){e.preventDefault();move(1);}
+  else if(e.key==="ArrowUp"){e.preventDefault();move(-1);}
+  else if(e.key==="Home"&&!inSearch){e.preventDefault();moveTo(0);}
+  else if(e.key==="End"&&!inSearch){e.preventDefault();moveTo(-1);}
+  else if(e.key===" "&&!inSearch){e.preventDefault();
+    if(MEDIA){MEDIA.paused?MEDIA.play():MEDIA.pause();}
+    else if(CURRENT){SEL.has(CURRENT)?SEL.delete(CURRENT):SEL.add(CURRENT);render();
+      const r=$('#list .row[data-name="'+cssEsc(CURRENT)+'"]');if(r)r.scrollIntoView({block:"nearest"});}
+  }
+});
+
+// ---------------------------------------------------------------- xuat ZIP
+async function exportZip(names){
+  if(!FILES.length){toast("Chua mo gi ca","err");return;}
+  const chosen=FILES.filter(f=>!names||names.includes(f.name));
+  if(!chosen.length){toast("Chua chon file nao","err");return;}
+  const total=chosen.length;let done=0;
+  toast(`Dang giai ma & gom ${total} file...`);
+  const zipFiles=[];
+  try{
+    for(const f of chosen){
+      zipFiles.push({name:f.name,data:await f.read()});
+      if(++done%20===0||done===total)toast(`Da xu ly ${done}/${total} file...`);
+    }
+    const blob=R.makeZip(zipFiles);
+    const zipName=(SRC_LABEL.replace(/\.[^.]+$/,"")||"extracted")+".zip";
+    downloadBlob(blob,zipName);
+    toast(`✅ Da tao ${zipName} (${fmtSize(blob.size)}, ${total} file)`,"ok",6000);
+  }catch(e){toast("Loi tao ZIP: "+e.message,"err",6000);}
+}
+$("#btnZipSel").addEventListener("click",()=>exportZip([...SEL]));
+$("#btnZipAll").addEventListener("click",()=>exportZip(null));
+
+// ---------------------------------------------------------------- drag & drop
+const ENC_RE=/\.(rpgmvp|rpgmvo|rpgmvm|png_|ogg_|m4a_)$/i;
+let dragc=0;
+function walkEntry(entry,prefix=""){
+  return new Promise(res=>{
+    if(entry.isFile){entry.file(f=>res([{file:f,path:prefix+entry.name}]),()=>res([]));}
+    else if(entry.isDirectory){const rd=entry.createReader();const acc=[];
+      const rb=()=>rd.readEntries(async ents=>{
+        if(!ents.length){const nested=await Promise.all(acc.map(en=>walkEntry(en,prefix+entry.name+"/")));
+          res(nested.flat());}
+        else{acc.push(...ents);rb();}},()=>res([]));rb();}
+    else res([]);
+  });
+}
+window.addEventListener("dragenter",e=>{e.preventDefault();dragc++;$("#drop").classList.add("on");});
+window.addEventListener("dragover",e=>e.preventDefault());
+window.addEventListener("dragleave",e=>{dragc--;if(dragc<=0)$("#drop").classList.remove("on");});
+window.addEventListener("drop",async e=>{
+  e.preventDefault();dragc=0;$("#drop").classList.remove("on");
+  let items=[];const dt=e.dataTransfer.items;
+  if(dt&&dt.length&&dt[0].webkitGetAsEntry){
+    const ents=[...dt].map(it=>it.webkitGetAsEntry&&it.webkitGetAsEntry()).filter(Boolean);
+    const lists=await Promise.all(ents.map(en=>walkEntry(en)));items=lists.flat();
+  }
+  if(!items.length)items=[...e.dataTransfer.files].map(f=>({file:f,path:f.webkitRelativePath||f.name}));
+  handleItems(items);
+});
+
+resetUI();
+</script>
+</body>
+</html>
